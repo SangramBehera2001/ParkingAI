@@ -6,9 +6,16 @@ const createUser = async (data) => {
   });
 };
 
+// const getAllUsers = async () => {
+//   return prisma.user.findMany({
+//     orderBy: { createdAt: 'desc' },
+//   });
+// };
 const getAllUsers = async () => {
   return prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
+    include: {
+      vehicles: true
+    }
   });
 };
 

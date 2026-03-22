@@ -4,6 +4,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const prisma = require('./prisma/client');
 const usersRoutes = require('./routes/users.routes');
+const vehiclesRoutes = require('./routes/vehicles.routes');
+const tokenRoutes = require('./routes/token.routes');
+const qrRoutes = require('./routes/qr.routes');
+const scanRoutes = require('./routes/scan.routes');
 
 const app = express();
 
@@ -12,6 +16,10 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/api/users', usersRoutes);
+app.use('/api/vehicles', vehiclesRoutes);
+app.use('/api/tokens', tokenRoutes);
+app.use('/api/qr', qrRoutes);
+app.use('/scan', scanRoutes);    //  no /api prefix, just /scan
 
 app.get('/health', async (req, res) => {
   try {
@@ -21,6 +29,22 @@ app.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
+
+// app.use((err, req, res, next) => {
+//   console.error(err);
+
+//   if (err.name === 'ZodError') {
+//     return res.status(400).json({
+//       success: false,
+//       errors: err.errors,
+//     });
+//   }
+
+//   res.status(500).json({
+//     success: false,
+//     message: 'Internal Server Error',
+//   });
+// });
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -32,9 +56,18 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Handle Prisma unique constraint errors
+  if (err.code === 'P2002') {
+    return res.status(409).json({
+      success: false,
+      message: `${err.meta?.target} already exists. Please use a different value.`
+    });
+  }
+
   res.status(500).json({
     success: false,
-    message: 'Internal Server Error',
+    message: err.message,
+    type: err.constructor.name
   });
 });
 

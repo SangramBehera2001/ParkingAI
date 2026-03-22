@@ -9,13 +9,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        Int       @id @default(autoincrement())
   name      String
+  email     String    @unique
   phone     String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -41,12 +42,16 @@ model Vehicle {
 model Token {
   id          Int      @id @default(autoincrement())
   publicToken String   @unique
+  privateToken String   @unique   // ADD THIS FOR privateToken
   isActive    Boolean  @default(true)
   vehicleId   Int
+  qrCodeUrl   String?  @db.LongText   // Krishna ADD THIS LINE
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@map("tokens")
 }
+
