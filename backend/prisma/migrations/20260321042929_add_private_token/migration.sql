@@ -6,8 +6,12 @@
 
 */
 -- AlterTable
+<<<<<<< Updated upstream
 ALTER TABLE `tokens` ADD COLUMN `privateToken` VARCHAR(191) NOT NULL,
     ADD COLUMN `qrCodeUrl` LONGTEXT NULL;
+=======
+ALTER TABLE `tokens` ADD COLUMN `privateToken` VARCHAR(191) NOT NULL;
+>>>>>>> Stashed changes
 
 -- CreateIndex
 CREATE UNIQUE INDEX `tokens_privateToken_key` ON `tokens`(`privateToken`);

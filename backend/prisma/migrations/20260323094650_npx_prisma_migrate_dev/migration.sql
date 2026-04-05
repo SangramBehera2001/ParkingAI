@@ -1,0 +1,2 @@
+-- This migration is skipped as it's handled by 20260323_complete_schema
+-- All columns and tables have been created there
