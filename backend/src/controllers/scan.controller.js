@@ -29,7 +29,7 @@ const scanQR = async (req, res, next) => {
       });
     }
 
-    // 🔹 Call service layer
+    // 🔹 Call service layers
     const data = await scanService.scanVehicle(token);
 
     // 🔹 Success response
