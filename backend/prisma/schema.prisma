@@ -1,26 +1,31 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// 🔹 Modified by Dibyaranjan Swain
+// Purpose: Upgrade existing schema to support QR + masking + call routing system
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        Int       @id @default(autoincrement())
-  name      String
-  phone     String    @unique
+
+  name      String    @db.Text
+
+  email     String    @db.Text
+  emailHash String    @unique
+
+  phone     String    @db.Text
+  phoneHash String    @unique
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   vehicles  Vehicle[]
+  tokens    Token[]
 
   @@map("users")
 }
@@ -29,6 +34,7 @@ model Vehicle {
   id            Int      @id @default(autoincrement())
   vehicleNumber String   @unique
   userId        Int
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -38,15 +44,84 @@ model Vehicle {
   @@map("vehicles")
 }
 
-model Token {
-  id          Int      @id @default(autoincrement())
-  publicToken String   @unique
-  isActive    Boolean  @default(true)
-  vehicleId   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model ProxyNumber {
+  id        Int     @id @default(autoincrement())
 
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Virtual number (masked number shown in QR)
+  number    String  @unique
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Enable/disable number dynamically
+  isActive  Boolean @default(true)
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Prevent same number being used in multiple active calls
+  isBusy    Boolean @default(false)
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Relation with tokens using this proxy
+  tokens    Token[]
+
+  @@map("proxy_numbers")
+}
+
+model Token {
+  id           Int      @id @default(autoincrement())
+
+  publicToken  String   @unique
+  privateToken String   @unique   // 🔹 Used internally for secure validation
+
+  isActive     Boolean  @default(true)
+
+  vehicleId    Int
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Link token directly to user (faster lookup during call routing)
+  userId       Int
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Assign proxy (masked number)
+  proxyNumberId Int
+
+  qrCodeUrl    String?  @db.LongText
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // 🔹 Added by Dibyaranjan Swain
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 🔹 Added by Dibyaranjan Swain
+  proxyNumber  ProxyNumber  @relation(fields: [proxyNumberId], references: [id])
+
+  // 🔹 Added by Dibyaranjan Swain
+  // Purpose: Track all calls made using this token
+  callLogs     CallLog[]
 
   @@map("tokens")
+}
+
+
+model CallLog {
+  id          Int      @id @default(autoincrement())
+
+  caller      String
+  receiver    String
+  proxyNumber String
+
+  tokenId     Int
+
+  // 🔥 NEW FIELDS (Fix mismatch)
+  status      String?    // completed, failed, busy, no-answer
+  duration    Int?       // call duration in seconds
+  endedAt     DateTime?  // when call ended
+
+  createdAt   DateTime @default(now())
+
+  token       Token    @relation(fields: [tokenId], references: [id])
+
+  @@map("call_logs")
 }

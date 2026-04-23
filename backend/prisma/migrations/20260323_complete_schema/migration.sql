@@ -1,0 +1,2 @@
+-- This migration is skipped as all tables and columns already exist
+-- Database schema has already been synced
