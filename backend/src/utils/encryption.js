@@ -5,6 +5,9 @@ const crypto = require('crypto');
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 
+const ENCRYPTION_ENABLED =
+  process.env.ENCRYPTION_ENABLED !== "false";
+
 // 🔥 Load keys from ENV
 const KEYS = {
   v1: Buffer.from(process.env.KEY_V1, 'hex'),
@@ -43,6 +46,10 @@ const getKeyByVersion = (version) => {
 const encrypt = (plainText) => {
   if (!plainText) return null;
 
+  if (!ENCRYPTION_ENABLED) {
+    return String(plainText);
+  }
+
   const iv = crypto.randomBytes(IV_LENGTH);
 
   const key = getKeyByVersion(CURRENT_VERSION);
@@ -67,6 +74,10 @@ const decrypt = (encryptedText) => {
 
   try {
     const parts = encryptedText.split(':');
+
+    if (parts.length !== 3 && parts.length !== 4) {
+      return encryptedText;
+    }
 
     // 🔥 Handle OLD DATA (no version)
     if (parts.length === 3) {

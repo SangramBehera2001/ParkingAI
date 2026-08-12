@@ -11,32 +11,34 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  name      String    @db.Text
+  name String @db.Text
 
-  email     String    @db.Text
-  emailHash String    @unique
+  email     String @db.Text
+  emailHash String @unique
 
-  phone     String    @db.Text
-  phoneHash String    @unique
+  phone        String  @db.Text
+  phoneHash    String  @unique
+  passwordHash String? @db.VarChar(255)
+  role         String  @default("USER") @db.VarChar(20)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vehicles  Vehicle[]
-  tokens    Token[]
+  vehicles Vehicle[]
+  tokens   Token[]
 
   @@map("users")
 }
 
 model Vehicle {
-  id            Int      @id @default(autoincrement())
-  vehicleNumber String   @unique
+  id            Int    @id @default(autoincrement())
+  vehicleNumber String @unique
   userId        Int
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokens Token[]
@@ -45,83 +47,82 @@ model Vehicle {
 }
 
 model ProxyNumber {
-  id        Int     @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Virtual number (masked number shown in QR)
-  number    String  @unique
+  number String @unique
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Enable/disable number dynamically
-  isActive  Boolean @default(true)
+  isActive Boolean @default(true)
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Prevent same number being used in multiple active calls
-  isBusy    Boolean @default(false)
+  isBusy Boolean @default(false)
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Relation with tokens using this proxy
-  tokens    Token[]
+  tokens Token[]
 
   @@map("proxy_numbers")
 }
 
 model Token {
-  id           Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  publicToken  String   @unique
-  privateToken String   @unique   // 🔹 Used internally for secure validation
+  publicToken  String @unique
+  privateToken String @unique // 🔹 Used internally for secure validation
 
-  isActive     Boolean  @default(true)
+  isActive Boolean @default(true)
 
-  vehicleId    Int
+  vehicleId Int
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Link token directly to user (faster lookup during call routing)
-  userId       Int
+  userId Int
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Assign proxy (masked number)
   proxyNumberId Int
 
-  qrCodeUrl    String?  @db.LongText
+  qrCodeUrl String? @db.LongText
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  // 🔹 Added by Dibyaranjan Swain
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   // 🔹 Added by Dibyaranjan Swain
-  proxyNumber  ProxyNumber  @relation(fields: [proxyNumberId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 🔹 Added by Dibyaranjan Swain
+  proxyNumber ProxyNumber @relation(fields: [proxyNumberId], references: [id])
 
   // 🔹 Added by Dibyaranjan Swain
   // Purpose: Track all calls made using this token
-  callLogs     CallLog[]
+  callLogs CallLog[]
 
   @@map("tokens")
 }
 
-
 model CallLog {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   caller      String
   receiver    String
   proxyNumber String
 
-  tokenId     Int
+  tokenId Int
 
   // 🔥 NEW FIELDS (Fix mismatch)
-  status      String?    // completed, failed, busy, no-answer
-  duration    Int?       // call duration in seconds
-  endedAt     DateTime?  // when call ended
+  status   String? // completed, failed, busy, no-answer
+  duration Int? // call duration in seconds
+  endedAt  DateTime? // when call ended
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  token       Token    @relation(fields: [tokenId], references: [id])
+  token Token @relation(fields: [tokenId], references: [id])
 
   @@map("call_logs")
 }

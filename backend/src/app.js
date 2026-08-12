@@ -12,6 +12,7 @@ const vehiclesRoutes = require('./routes/vehicles.routes');
 const tokenRoutes = require('./routes/token.routes');
 const qrRoutes = require('./routes/qr.routes');
 const scanRoutes = require('./routes/scan.routes');
+const authRoutes = require('./routes/auth.routes');
 
 // 🔹 Added by Dibyaranjan Swain
 // Purpose: Handle Exotel call webhook
@@ -20,7 +21,27 @@ const callRoutes = require('./routes/call.routes');
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+// app.use(cors());
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean));
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      const error = new Error(`Origin ${origin} is not allowed by CORS`);
+      error.statusCode = 403;
+      return callback(error);
+    },
+    credentials: true,
+  }),
+);
 
 // 🔥 IMPORTANT: Exotel sends form-urlencoded data
 // 🔹 Added by Dibyaranjan Swain
@@ -31,10 +52,11 @@ app.use(morgan('dev'));
 
 // 🔹 Existing routes (UNCHANGED)
 app.use('/api/users', usersRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/qr', qrRoutes);
-app.use('/scan', scanRoutes);
+app.use('/api/scan', scanRoutes);
 
 // 🔥 NEW ROUTE
 // 🔹 Added by Dibyaranjan Swain
@@ -59,7 +81,14 @@ app.use((err, req, res, next) => {
   if (err.name === 'ZodError') {
     return res.status(400).json({
       success: false,
-      errors: err.errors,
+      errors: err.issues,
+    });
+  }
+
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message
     });
   }
 

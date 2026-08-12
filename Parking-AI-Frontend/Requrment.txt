@@ -1,0 +1,107 @@
+QR Vehicle Contact System - Frontend Setup
+
+----------------------------------------
+1. SYSTEM REQUIREMENTS
+----------------------------------------
+Node.js >= 18.x
+npm >= 9.x
+
+----------------------------------------
+2. PROJECT SETUP
+----------------------------------------
+npm create vite@latest frontend
+cd frontend
+npm install
+
+----------------------------------------
+3. INSTALL DEPENDENCIES
+----------------------------------------
+npm install react-router-dom@6
+npm install lucide-react@0.378.0
+npm install axios@1.6.8
+
+----------------------------------------
+4. INSTALL TAILWIND CSS
+----------------------------------------
+npm install -D tailwindcss@3.4.1 postcss autoprefixer
+npx tailwindcss init -p
+
+----------------------------------------
+5. CONFIGURE TAILWIND
+----------------------------------------
+tailwind.config.js:
+content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]
+
+src/index.css:
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+----------------------------------------
+6. PROJECT STRUCTURE
+----------------------------------------
+src/
+  components/
+  pages/
+  services/
+  utils/
+  App.jsx
+  main.jsx
+
+----------------------------------------
+7. ROUTING SETUP
+----------------------------------------
+Wrap App with BrowserRouter in main.jsx
+
+Routes:
+/
+/login
+/register
+
+----------------------------------------
+8. RUN PROJECT
+----------------------------------------
+npm run dev
+
+----------------------------------------
+9. BUILD FOR PRODUCTION
+----------------------------------------
+npm run build
+
+----------------------------------------
+10. FUTURE INTEGRATION (BACKEND APIs)
+----------------------------------------
+POST   /api/users        (Register)
+POST   /api/auth/login   (Login - to be created)
+POST   /api/tokens       (Generate QR)
+GET    /scan/:token      (Scan QR)
+POST   /api/call         (Call connect)
+
+----------------------------------------
+11. OPTIONAL (LATER)
+----------------------------------------
+npm install react-hook-form@7
+npm install zod@3
+npm install react-hot-toast@2
+
+----------------------------------------
+npm install axios
+npm install lucide-react
+
+User scans QR
+      ↓
+Mobile opens /scan/:token
+      ↓
+Frontend calls backend
+      ↓
+Shows vehicle + proxy number
+      ↓
+User clicks "Call Owner"
+      ↓
+Call goes via Exotel proxy
+
+
+
+---------------------
+
+npm install html5-qrcode

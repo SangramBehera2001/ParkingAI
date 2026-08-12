@@ -6,7 +6,8 @@ const generateQRCode = async (token) => {
 
   // This is the URL that gets encoded INSIDE the QR code
   // When someone scans → their phone opens this URL
-  const scanUrl = `http://localhost:3000/scan/${token}`;
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const scanUrl = `${frontendUrl}/scan/${token}`;
 
   // toDataURL returns a base64 string like:
   // "data:image/png;base64,iVBORw0KGgo..."

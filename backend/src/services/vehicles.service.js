@@ -1,101 +1,70 @@
-// 🔹 Modified by Dibyaranjan Swain
-// Purpose: Secure vehicle APIs by exposing proxy number instead of real phone
-
 const prisma = require('../prisma/client');
+const { decrypt } = require('../utils/encryption');
 
-
-// 🔷 CREATE VEHICLE
-// 🔹 Returns vehicle + user (no proxy here yet, token created separately)
-const createVehicle = async (data) => {
-  return prisma.vehicle.create({
-    data,
-    include: {
-      user: true
-    }
-  });
+const vehicleInclude = {
+  user: true,
+  tokens: {
+    include: { proxyNumber: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1
+  }
 };
 
+const formatVehicle = (vehicle) => ({
+  id: vehicle.id,
+  vehicleNumber: vehicle.vehicleNumber,
+  ownerName: decrypt(vehicle.user.name),
+  phone: vehicle.tokens?.[0]?.proxyNumber?.number || null
+});
 
+const createVehicle = async (vehicleNumber, userId) => {
+  const vehicle = await prisma.vehicle.create({
+    data: { vehicleNumber, userId },
+    include: vehicleInclude
+  });
+  return formatVehicle(vehicle);
+};
 
-// 🔷 GET ALL VEHICLES
-// 🔹 Includes latest proxy number using Token → ProxyNumber mapping
-const getAllVehicles = async () => {
-
+const getAllVehicles = async (userId) => {
   const vehicles = await prisma.vehicle.findMany({
-    include: {
-      user: true,
-
-      // 🔹 Added by Dibyaranjan Swain
-      // Purpose: fetch latest token with proxy number
-      tokens: {
-        include: {
-          proxyNumber: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 1   // only latest token
-      }
-    },
+    where: { userId },
+    include: vehicleInclude,
     orderBy: { createdAt: 'desc' }
   });
-
-  // 🔹 Transform response (hide real phone)
-  return vehicles.map(vehicle => ({
-    id: vehicle.id,
-    vehicleNumber: vehicle.vehicleNumber,
-    ownerName: vehicle.user.name,
-
-    // 🔥 IMPORTANT: expose proxy number instead of real phone
-    phone: vehicle.tokens[0]?.proxyNumber?.number || null
-  }));
+  return vehicles.map(formatVehicle);
 };
 
-
-
-
-// 🔷 GET VEHICLE BY ID
-// 🔹 Returns single vehicle with proxy number (secure)
-const getVehicleById = async (id) => {
-
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id },
-    include: {
-      user: true,
-
-      // 🔹 Added by Dibyaranjan Swain
-      // Purpose: fetch latest proxy mapping
-      tokens: {
-        include: {
-          proxyNumber: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 1
-      }
-    }
+const getVehicleById = async (id, userId) => {
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id, userId },
+    include: vehicleInclude
   });
-
-  if (!vehicle) {
-    throw new Error("Vehicle not found");
-  }
-
-  // 🔹 Clean + secure response
-  return {
-    id: vehicle.id,
-    vehicleNumber: vehicle.vehicleNumber,
-    ownerName: vehicle.user.name,
-
-    // 🔥 Proxy number exposed
-    phone: vehicle.tokens[0]?.proxyNumber?.number || null
-  };
+  return vehicle ? formatVehicle(vehicle) : null;
 };
 
+const updateVehicle = async (id, userId, vehicleNumber) => {
+  const existing = await prisma.vehicle.findFirst({ where: { id, userId } });
+  if (!existing) return null;
 
+  const vehicle = await prisma.vehicle.update({
+    where: { id },
+    data: { vehicleNumber },
+    include: vehicleInclude
+  });
+  return formatVehicle(vehicle);
+};
+
+const deleteVehicle = async (id, userId) => {
+  const existing = await prisma.vehicle.findFirst({ where: { id, userId } });
+  if (!existing) return false;
+  await prisma.vehicle.delete({ where: { id } });
+  return true;
+};
 
 module.exports = {
   createVehicle,
   getAllVehicles,
-  getVehicleById
+  getVehicleById,
+  updateVehicle,
+  deleteVehicle
 };

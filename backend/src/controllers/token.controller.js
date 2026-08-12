@@ -11,7 +11,7 @@
         });
       }
 
-      const result = await tokenService.createToken(vehicleId);
+      const result = await tokenService.createToken(Number(vehicleId), req.user.id);
 
       res.status(201).json({
         success: true,

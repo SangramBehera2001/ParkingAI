@@ -6,21 +6,24 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 
-const createToken = async (vehicleId) => {
+const createToken = async (vehicleId, userId) => {
 
   const publicToken = uuidv4();
   const privateToken = crypto.randomBytes(32).toString('hex');
 
   // 🔥 Move this later to ENV (we will fix later)
-  const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+  // const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
-  const scanUrl = `${BASE_URL}/scan/${publicToken}`;
+  // const scanUrl = `${BASE_URL}/scan/${publicToken}`;
+
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const scanUrl = `${frontendUrl}/scan/${publicToken}`;
 
   const qrCodeUrl = await QRCode.toDataURL(scanUrl);
 
   // 🔹 Get vehicle
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id: vehicleId, userId },
     include: { user: true }
   });
 
@@ -61,7 +64,7 @@ const createToken = async (vehicleId) => {
   // ============================================
   // 🔥🔥 NEW FIX: AUTO RELEASE PROXY AFTER 5 MINUTES
   // ============================================
-  setTimeout(async () => {
+  const releaseTimer = setTimeout(async () => {
     try {
       console.log(`⏳ Releasing proxy ${proxy.number} after timeout`);
 
@@ -75,6 +78,8 @@ const createToken = async (vehicleId) => {
       console.error("❌ Error releasing proxy:", error.message);
     }
   }, 5 * 60 * 1000); // 5 minutes
+
+  releaseTimer.unref();
 
   return token;
 };
